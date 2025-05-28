@@ -313,4 +313,3 @@ const ParentViewPage = () => {
 };
 
 export default ParentViewPage;
-```
