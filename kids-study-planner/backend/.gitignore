@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+ENV/
+env/
+activate_this.py
+
+# Instance folder
+instance/
+
+# IDE
+.vscode/
+.idea/
+
+# Other
+*.swp
+*.swo
+*.DS_Store
