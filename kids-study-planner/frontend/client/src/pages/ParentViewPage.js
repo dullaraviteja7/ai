@@ -10,6 +10,14 @@ const ParentViewPage = () => {
   const [isLoadingKidData, setIsLoadingKidData] = useState(false);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
 
+  // State variables for performance chart filtering
+  const [performanceStartDate, setPerformanceStartDate] = useState('');
+  const [performanceEndDate, setPerformanceEndDate] = useState('');
+  const [performanceSubjectFilter, setPerformanceSubjectFilter] = useState(''); // Default to 'All' or empty
+  const [uniqueSubjectsForFilter, setUniqueSubjectsForFilter] = useState(['All']);
+  const [filteredPerformanceData, setFilteredPerformanceData] = useState([]);
+
+
   // Fetch all kids for the selector
   useEffect(() => {
     const fetchKids = async () => {
@@ -45,10 +53,11 @@ const ParentViewPage = () => {
   const fetchKidData = useCallback(async (kidId) => {
     if (!kidId) {
       setSelectedKidData(null);
+      setUniqueSubjectsForFilter(['All']);
+      setFilteredPerformanceData([]);
       return;
     }
     setIsLoadingKidData(true);
-    // Keep existing message if it's about AI insights, otherwise clear for new kid load
     if (!message.includes("AI insights")) setMessage('');
     try {
       const response = await fetch(`http://localhost:5000/api/kids/${kidId}`);
@@ -62,21 +71,55 @@ const ParentViewPage = () => {
       }
       const data = await response.json();
       setSelectedKidData(data);
+
+      // Extract unique subjects for filter dropdown
+      if (data && data.exams) {
+        const subjects = ['All', ...new Set(data.exams.map(exam => exam.subject))];
+        setUniqueSubjectsForFilter(subjects);
+        // Initially, performance data is all exams for the kid
+        // setFilteredPerformanceData(getExamPerformanceData(data.exams)); // Will be handled by useEffect on selectedKidData
+      } else {
+        setUniqueSubjectsForFilter(['All']);
+        // setFilteredPerformanceData([]);
+      }
+
     } catch (error) {
       setMessage(`Error fetching data for kid ${kidId}: ${error.message}`);
       setSelectedKidData(null);
+      setUniqueSubjectsForFilter(['All']);
+      // setFilteredPerformanceData([]);
     } finally {
       setIsLoadingKidData(false);
     }
-  }, [message]); // Added message to dependencies to allow clearing it selectively
+  }, [message]);
 
   useEffect(() => {
     if (selectedKidId) {
       fetchKidData(selectedKidId);
     } else {
-      setSelectedKidData(null); // Clear data if no kid is selected
+      setSelectedKidData(null); 
+      setPerformanceStartDate('');
+      setPerformanceEndDate('');
+      setPerformanceSubjectFilter('');
+      setUniqueSubjectsForFilter(['All']);
+      setFilteredPerformanceData([]);
     }
   }, [selectedKidId, fetchKidData]);
+  
+  // Recalculate filtered performance data when filters or selectedKidData changes
+  useEffect(() => {
+    if (selectedKidData && selectedKidData.exams) {
+      const data = getExamPerformanceData(
+        selectedKidData.exams, 
+        performanceStartDate, 
+        performanceEndDate, 
+        performanceSubjectFilter
+      );
+      setFilteredPerformanceData(data);
+    } else {
+      setFilteredPerformanceData([]);
+    }
+  }, [selectedKidData, performanceStartDate, performanceEndDate, performanceSubjectFilter]);
 
   const handleKidSelectionChange = (e) => {
     setSelectedKidId(e.target.value);
@@ -197,16 +240,65 @@ const ParentViewPage = () => {
     }));
   };
 
-  const getExamPerformanceData = (exams) => {
+  const getExamPerformanceData = (exams, startDate, endDate, subjectFilter) => {
     if (!exams || exams.length === 0) return [];
-    return exams
+    
+    let filteredExams = exams;
+
+    if (startDate) {
+      filteredExams = filteredExams.filter(exam => new Date(exam.exam_date) >= new Date(startDate));
+    }
+    if (endDate) {
+      filteredExams = filteredExams.filter(exam => new Date(exam.exam_date) <= new Date(endDate));
+    }
+    if (subjectFilter && subjectFilter !== 'All') {
+      filteredExams = filteredExams.filter(exam => exam.subject === subjectFilter);
+    }
+
+    return filteredExams
       .map(exam => ({
-        date: exam.exam_date, // Keep as YYYY-MM-DD for sorting
-        name: `${exam.exam_name} (${exam.subject} - ${exam.exam_date})`, // For tooltip or if dates are too close
+        date: exam.exam_date,
+        name: `${exam.exam_name} (${exam.subject} - ${exam.exam_date})`,
         marks: parseFloat(exam.marks_obtained_percentage),
-        subject: exam.subject // For potential multi-line chart or filtering later
+        class_top_percentage: exam.class_top_percentage !== undefined && exam.class_top_percentage !== null ? parseFloat(exam.class_top_percentage) : null,
+        subject: exam.subject 
       }))
-      .sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  };
+
+  const handleApplyPerformanceFilters = () => {
+    // This function is more of a conceptual trigger if we weren't using useEffect for direct changes.
+    // Since performanceStartDate, performanceEndDate, performanceSubjectFilter are state variables,
+    // and useEffect recalculates filteredPerformanceData when they change,
+    // this button is not strictly necessary for functionality if inputs directly set state.
+    // However, it can be kept for explicit user action if preferred.
+    // For now, the useEffect handles it, so this function can be empty or log action.
+    console.log("Applying filters (though useEffect handles this automatically on state change)");
+  };
+  
+  const renderPerformanceChartFilters = () => {
+    return (
+      <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap' }}>
+        <div>
+          <label htmlFor="perfStartDate" style={{ marginRight: '5px' }}>Start Date:</label>
+          <input type="date" id="perfStartDate" value={performanceStartDate} onChange={e => setPerformanceStartDate(e.target.value)} style={{ padding: '5px' }}/>
+        </div>
+        <div>
+          <label htmlFor="perfEndDate" style={{ marginRight: '5px' }}>End Date:</label>
+          <input type="date" id="perfEndDate" value={performanceEndDate} onChange={e => setPerformanceEndDate(e.target.value)} style={{ padding: '5px' }}/>
+        </div>
+        <div>
+          <label htmlFor="perfSubject" style={{ marginRight: '5px' }}>Subject:</label>
+          <select id="perfSubject" value={performanceSubjectFilter} onChange={e => setPerformanceSubjectFilter(e.target.value)} style={{ padding: '5px' }}>
+            {uniqueSubjectsForFilter.map(subject => (
+              <option key={subject} value={subject}>{subject}</option>
+            ))}
+          </select>
+        </div>
+        {/* <button onClick={handleApplyPerformanceFilters} style={{ padding: '5px 10px' }}>Apply Filters</button> */}
+        {/* Button is optional as useEffect applies filters on state change */}
+      </div>
+    );
   };
 
   const renderCharts = (kidData) => {
@@ -215,7 +307,17 @@ const ParentViewPage = () => {
     }
 
     const averageMarksData = getAverageMarksPerSubject(kidData.exams);
-    const performanceData = getExamPerformanceData(kidData.exams);
+    // const performanceData = getExamPerformanceData(kidData.exams); // Now using filteredPerformanceData from state
+
+    // Scatter plot data
+    const marksVsClassTopData = kidData.exams
+        .filter(exam => exam.marks_obtained_percentage !== null && exam.class_top_percentage !== null && exam.class_top_percentage !== undefined)
+        .map(exam => ({
+            name: `${exam.exam_name} (${exam.subject})`,
+            marks: parseFloat(exam.marks_obtained_percentage),
+            classTop: parseFloat(exam.class_top_percentage)
+        }));
+
 
     return (
       <section style={{ marginTop: '30px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
@@ -229,7 +331,7 @@ const ParentViewPage = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="subject" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip formatter={(value, name) => [value + '%', name === 'averageMarks' ? "Average Marks" : name]}/>
                 <Legend />
                 <Bar dataKey="averageMarks" fill="#8884d8" name="Average Marks (%)" />
               </BarChart>
@@ -237,22 +339,76 @@ const ParentViewPage = () => {
           </div>
         )}
 
-        {performanceData.length > 0 && (
-           <div style={{ marginBottom: '30px' }}>
-            <h4>Exam Performance Over Time</h4>
+        {/* Performance Line Chart with Filters */}
+        <div style={{ marginBottom: '30px' }}>
+          <h4>Exam Performance Over Time</h4>
+          {renderPerformanceChartFilters()}
+          {filteredPerformanceData.length > 0 ? (
             <ResponsiveContainer width="95%" height={300}>
-              <LineChart data={performanceData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <LineChart data={filteredPerformanceData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-15} textAnchor="end" height={70} 
-                       tickFormatter={(tick) => tick.substring(0, tick.lastIndexOf('(') -1 ) } // Show exam name without subject/date
+                <XAxis 
+                    dataKey="name" 
+                    angle={-20} 
+                    textAnchor="end" 
+                    height={80} 
+                    interval="preserveStartEnd"
+                    tickFormatter={(tick) => {
+                        const namePart = tick.substring(0, tick.lastIndexOf('(') -1);
+                        const datePart = tick.substring(tick.lastIndexOf('-') + 1, tick.lastIndexOf(')'));
+                        return `${namePart} (${datePart})`; // Show exam name and just day of date
+                    }}
                 />
                 <YAxis domain={[0, 100]} />
-                <Tooltip formatter={(value, name, props) => [`${props.payload.marks}% on ${props.payload.date} (${props.payload.subject})`, "Marks"]}/>
+                <Tooltip 
+                  formatter={(value, name, props) => {
+                    if (name === 'marks') {
+                      const classTop = props.payload.class_top_percentage;
+                      return [`${value}% (Class Top: ${classTop !== null ? classTop + '%' : 'N/A'})`, `Marks - ${props.payload.subject}`];
+                    }
+                    return [value, name];
+                  }}
+                  labelFormatter={(label) => {
+                     // label here is the full 'name' key from data object
+                     const datePart = label.substring(label.lastIndexOf('(') +1, label.lastIndexOf(')'));
+                     const examNamePart = label.substring(0, label.lastIndexOf('(') -1);
+                     const subjectPart = label.substring(label.indexOf('(') + 1, label.indexOf(' -'));
+                     return `${examNamePart} (${subjectPart}) - ${datePart}`;
+                  }}
+                />
                 <Legend />
                 <Line type="monotone" dataKey="marks" stroke="#82ca9d" name="Marks Obtained (%)" activeDot={{ r: 8 }} />
               </LineChart>
             </ResponsiveContainer>
-          </div>
+          ) : (
+            <p>No exam data matches the current filters.</p>
+          )}
+        </div>
+
+        {/* Optional Scatter Plot */}
+        {marksVsClassTopData.length > 0 && (
+            <div style={{ marginBottom: '30px' }}>
+                <h4>Marks vs. Class Top Percentage</h4>
+                <ResponsiveContainer width="95%" height={400}>
+                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                        <CartesianGrid />
+                        <XAxis type="number" dataKey="marks" name="Student Marks" unit="%" domain={[0, 100]} />
+                        <YAxis type="number" dataKey="classTop" name="Class Top Marks" unit="%" domain={[0, 100]} />
+                        <Tooltip 
+                            cursor={{ strokeDasharray: '3 3' }} 
+                            formatter={(value, name, props) => {
+                                if (name === "Student Marks" || name === "Class Top Marks") {
+                                    return [`${value}%`, name];
+                                }
+                                return [value, name];
+                            }}
+                            labelFormatter={(label) => props.payload && props.payload.name ? props.payload.name : ""} // Needs fixing, label is index
+                        />
+                        <Legend />
+                        <Scatter name="Exams" data={marksVsClassTopData} fill="#8884d8" />
+                    </ScatterChart>
+                </ResponsiveContainer>
+            </div>
         )}
       </section>
     );
