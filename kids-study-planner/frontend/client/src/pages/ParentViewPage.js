@@ -25,7 +25,8 @@ const ParentViewPage = () => {
       setMessage('');
       setKidsList([]);
       try {
-        const response = await fetch('http://localhost:5000/api/kids');
+        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000';
+        const response = await fetch(`${API_BASE_URL}/api/kids`);
         if (!response.ok) {
           let errorMsg = `HTTP error ${response.status}`;
           try {
@@ -60,7 +61,8 @@ const ParentViewPage = () => {
     setIsLoadingKidData(true);
     if (!message.includes("AI insights")) setMessage('');
     try {
-      const response = await fetch(`http://localhost:5000/api/kids/${kidId}`);
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000';
+      const response = await fetch(`${API_BASE_URL}/api/kids/${kidId}`);
       if (!response.ok) {
         let errorMsg = `HTTP error ${response.status}`;
         try {
@@ -134,7 +136,8 @@ const ParentViewPage = () => {
     setIsGeneratingInsights(true);
     setMessage('');
     try {
-      const response = await fetch(`http://localhost:5000/api/kids/${selectedKidId}/ai-insights`, { method: 'POST' });
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000';
+      const response = await fetch(`${API_BASE_URL}/api/kids/${selectedKidId}/ai-insights`, { method: 'POST' });
       const responseData = await response.json(); // Must await this before checking response.ok
       if (!response.ok) {
         throw new Error(responseData.error || `Failed to generate AI insights. Status: ${response.status}`);

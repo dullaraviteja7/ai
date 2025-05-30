@@ -27,7 +27,8 @@ const KidExamUpdatePage = () => {
       setMessage('');
       setKidsList([]); // Clear previous list
       try {
-        const response = await fetch('http://localhost:5000/api/kids');
+        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000';
+        const response = await fetch(`${API_BASE_URL}/api/kids`);
         if (!response.ok) {
           // Try to get error from backend response body if possible
           let errorMsg = `HTTP error ${response.status}`;
@@ -81,7 +82,8 @@ const KidExamUpdatePage = () => {
     formData.append('marks_sheet_image', selectedFile);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/kids/${selectedKidId}/exams/upload_image`, {
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000';
+      const response = await fetch(`${API_BASE_URL}/api/kids/${selectedKidId}/exams/upload_image`, {
         method: 'POST',
         body: formData,
         // Do NOT set Content-Type header manually for FormData
@@ -167,7 +169,8 @@ const KidExamUpdatePage = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/kids/${selectedKidId}/exams`, {
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000';
+      const response = await fetch(`${API_BASE_URL}/api/kids/${selectedKidId}/exams`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
