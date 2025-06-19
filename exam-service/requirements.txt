@@ -1,7 +1,0 @@
-Flask
-Flask-PyMongo
-python-dotenv
-Werkzeug
-Pytesseract
-Pillow
-kafka-python

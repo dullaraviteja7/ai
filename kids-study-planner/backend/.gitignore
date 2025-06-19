@@ -7,7 +7,6 @@ __pycache__/
 venv/
 ENV/
 env/
-.venv/ # Added common pattern
 activate_this.py
 
 # Instance folder
@@ -16,9 +15,6 @@ instance/
 # IDE
 .vscode/
 .idea/
-
-# Environment variables
-.env
 
 # Other
 *.swp

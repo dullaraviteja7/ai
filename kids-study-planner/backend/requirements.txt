@@ -1,14 +1,2 @@
 Flask
 Flask-CORS
-jaydebeapi
-requests
-Pytesseract
-Pillow
-pytest
-pytest-mock
-python-dotenv
-# For HSQLDB, the hsqldb.jar file is required.
-# It's not typically installed via pip.
-# You'll need to download it manually (e.g., from https://hsqldb.org/download/)
-# and place it in a known location, then provide the path to jaydebeapi.
-# Example: connect('org.hsqldb.jdbcDriver', 'jdbc:hsqldb:file:data/study_planner.db;shutdown=true', [], '/path/to/hsqldb.jar')

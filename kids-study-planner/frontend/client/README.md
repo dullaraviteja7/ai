@@ -11,18 +11,6 @@ In the project directory, you can run:
 Runs the app in the development mode.\
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-### API Configuration
-
-This frontend application is configured to make API calls to a Backend For Frontend (BFF) layer.
-It expects the BFF to be running on `http://localhost:4000` by default.
-
-To configure the API base URL, create a `.env` file in the root of the `client` directory (`kids-study-planner/frontend/client/.env`) and set the `REACT_APP_API_BASE_URL` variable:
-```
-REACT_APP_API_BASE_URL=http://localhost:4000
-```
-If this environment variable is not set, the application will default to `http://localhost:4000`.
-Ensure the BFF layer is running and properly routing requests to the backend microservices.
-
 The page will reload when you make changes.\
 You may also see any lint errors in the console.
 

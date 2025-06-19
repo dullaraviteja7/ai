@@ -48,7 +48,7 @@ const KidRegistrationPage = () => {
       improvement_areas: formData.improvement_areas.split(',').map(s => s.trim()).filter(s => s).length > 0 ? formData.improvement_areas.split(',').map(s => s.trim()).filter(s => s) : [],
       preferred_subjects: formData.preferred_subjects.split(',').map(s => s.trim()).filter(s => s).length > 0 ? formData.preferred_subjects.split(',').map(s => s.trim()).filter(s => s) : []
     };
-    
+
     // Ensure age is a valid number
     if (isNaN(payload.age) || payload.age <= 0) {
         setMessage('Error: Age must be a positive number.');
@@ -58,8 +58,7 @@ const KidRegistrationPage = () => {
 
 
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000';
-      const response = await fetch(`${API_BASE_URL}/api/kids/register`, {
+      const response = await fetch('http://localhost:5000/api/kids/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
